@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "state.h": "c",
+        "snake_utils.h": "c"
+    }
+}
