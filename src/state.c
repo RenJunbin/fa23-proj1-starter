@@ -126,7 +126,11 @@ static void set_board_at(game_state_t* state, unsigned int row, unsigned int col
 */
 static bool is_tail(char c) {
   // TODO: Implement this function.
-  return true;
+  char *s = "wasd";
+  if (strchr(s, c))
+    return true;
+  else
+    return false;
 }
 
 /*
@@ -136,7 +140,11 @@ static bool is_tail(char c) {
 */
 static bool is_head(char c) {
   // TODO: Implement this function.
-  return true;
+  char *s = "WASDx";
+  if (strchr(s, c))
+    return true;
+  else
+    return false;
 }
 
 /*
@@ -145,7 +153,11 @@ static bool is_head(char c) {
 */
 static bool is_snake(char c) {
   // TODO: Implement this function.
-  return true;
+  char *s = "wasd^<v>WASDx";
+  if (strchr(s, c))
+    return true;
+  else
+    return false;
 }
 
 /*
@@ -155,7 +167,13 @@ static bool is_snake(char c) {
 */
 static char body_to_tail(char c) {
   // TODO: Implement this function.
-  return '?';
+  switch(c) {
+    case '^': return 'w'; break;
+    case '<': return 'a'; break;
+    case 'v': return 's'; break;
+    case '>': return 'd'; break;
+    default: return '?';
+  }
 }
 
 /*
@@ -165,7 +183,13 @@ static char body_to_tail(char c) {
 */
 static char head_to_body(char c) {
   // TODO: Implement this function.
-  return '?';
+  switch(c) {
+    case 'W': return '^'; break;
+    case 'A': return '<'; break;
+    case 'S': return 'v'; break;
+    case 'D': return '>'; break;
+    default: return '?';
+  }
 }
 
 /*
@@ -175,7 +199,15 @@ static char head_to_body(char c) {
 */
 static unsigned int get_next_row(unsigned int cur_row, char c) {
   // TODO: Implement this function.
-  return cur_row;
+  switch(c) {
+    case 'v':
+    case 's':
+    case 'S': return cur_row + 1; break;
+    case '^':
+    case 'w':
+    case 'W': return cur_row - 1; break;
+    default: return cur_row;
+  }
 }
 
 /*
@@ -185,7 +217,15 @@ static unsigned int get_next_row(unsigned int cur_row, char c) {
 */
 static unsigned int get_next_col(unsigned int cur_col, char c) {
   // TODO: Implement this function.
-  return cur_col;
+  switch(c) {
+    case '>':
+    case 'd':
+    case 'D': return cur_col + 1; break;
+    case '<':
+    case 'a':
+    case 'A': return cur_col - 1; break;
+    default: return cur_col;
+  }
 }
 
 /*
@@ -197,7 +237,20 @@ static unsigned int get_next_col(unsigned int cur_col, char c) {
 */
 static char next_square(game_state_t* state, unsigned int snum) {
   // TODO: Implement this function.
-  return '?';
+  snake_t *snake = &state->snakes[snum];
+  unsigned int col = snake->head_col;
+  unsigned int row = snake->head_row;
+  char **board = state->board;
+  char head = board[row][col];
+  
+  switch (head)
+  {
+    case 'W': return board[row-1][col]; break;
+    case 'A': return board[row][col-1]; break;
+    case 'S': return board[row+1][col]; break;
+    case 'D': return board[row][col+1]; break;
+    default: return '?';
+  }
 }
 
 /*
@@ -213,7 +266,20 @@ static char next_square(game_state_t* state, unsigned int snum) {
 */
 static void update_head(game_state_t* state, unsigned int snum) {
   // TODO: Implement this function.
-  return;
+  snake_t *snake = &state->snakes[snum];
+  unsigned int col = snake->head_col;
+  unsigned int row = snake->head_row;
+  char **board = state->board;
+  char head = board[row][col];
+  
+  switch (head)
+  {
+    case 'W': snake->head_row -= 1, board[row][col] = '^', board[row-1][col] = 'W'; break;
+    case 'A': snake->head_col -= 1, board[row][col] = '<', board[row][col-1] = 'A'; break;
+    case 'S': snake->head_row += 1, board[row][col] = 'v', board[row+1][col] = 'S'; break;
+    case 'D': snake->head_col += 1, board[row][col] = '>', board[row][col+1] = 'D'; break;
+    default: ;
+  }
 }
 
 /*
@@ -228,18 +294,69 @@ static void update_head(game_state_t* state, unsigned int snum) {
 */
 static void update_tail(game_state_t* state, unsigned int snum) {
   // TODO: Implement this function.
-  return;
+  snake_t *snake = &state->snakes[snum];
+  unsigned int col = snake->tail_col;
+  unsigned int row = snake->tail_row;
+  char **board = state->board;
+  char tail = board[row][col];
+  
+  switch (tail)
+  {
+    case 'w': snake->tail_row -= 1, board[row][col] = ' ', board[row-1][col] = body_to_tail(board[row-1][col]); break;
+    case 'a': snake->tail_col -= 1, board[row][col] = ' ', board[row][col-1] = body_to_tail(board[row][col-1]); break;
+    case 's': snake->tail_row += 1, board[row][col] = ' ', board[row+1][col] = body_to_tail(board[row+1][col]); break;
+    case 'd': snake->tail_col += 1, board[row][col] = ' ', board[row][col+1] = body_to_tail(board[row][col+1]); break;
+    default: ;
+  }
 }
 
 /* Task 4.5 */
 void update_state(game_state_t* state, int (*add_food)(game_state_t* state)) {
   // TODO: Implement this function.
+  char *bodycell = "wasdWASD^<v>#";
+  for (unsigned int i=0; i<state->num_snakes; i++) {
+    if (strchr(bodycell, next_square(state, i))) {
+      unsigned int col = state->snakes[i].head_col;
+      unsigned int row = state->snakes[i].head_row;
+      state->snakes[i].live = false;
+      state->board[row][col] = 'x';
+    } else if(next_square(state, i) == '*') {
+      add_food(state);
+      update_head(state, i);
+    } else {
+      update_head(state, i);
+      update_tail(state, i);
+    }
+  }
   return;
 }
 
 /* Task 5 */
 game_state_t* load_board(FILE* fp) {
   // TODO: Implement this function.
+  char c = fgetc(fp);
+  game_state_t *state = (game_state_t *)malloc(sizeof(game_state_t));
+  state->board = NULL;
+  state->num_rows = 0;
+  state->num_snakes = 0;
+  state->snakes = NULL;
+  state->board = (char **)realloc(state->board, sizeof(char *) * (state->num_rows + 1));
+  state->board[state->num_rows] = (char *)malloc(sizeof(char));
+  int num_cols = 0;
+
+  for (; c != EOF; ) {
+    printf("%c", c);
+    fflush(stdout);
+    if (c != '\n') {
+      state->board[state->num_rows] = (char *)realloc(state->board[state->num_rows], sizeof(char) * (num_cols + 1));
+      // *(state->board[state->num_rows]++) = c;
+      // num_cols++;
+    } else {
+      state->num_rows++;
+      state->board = (char **)realloc(state->board, sizeof(char *) * (state->num_rows + 1));
+    }
+    c = fgetc(fp);
+  }
   return NULL;
 }
 
