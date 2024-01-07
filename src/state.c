@@ -334,30 +334,42 @@ void update_state(game_state_t* state, int (*add_food)(game_state_t* state)) {
 /* Task 5 */
 game_state_t* load_board(FILE* fp) {
   // TODO: Implement this function.
-  char c = fgetc(fp);
-  game_state_t *state = (game_state_t *)malloc(sizeof(game_state_t));
-  state->board = NULL;
-  state->num_rows = 0;
-  state->num_snakes = 0;
-  state->snakes = NULL;
-  state->board = (char **)realloc(state->board, sizeof(char *) * (state->num_rows + 1));
-  state->board[state->num_rows] = (char *)malloc(sizeof(char));
-  int num_cols = 0;
-
-  for (; c != EOF; ) {
-    printf("%c", c);
-    fflush(stdout);
-    if (c != '\n') {
-      state->board[state->num_rows] = (char *)realloc(state->board[state->num_rows], sizeof(char) * (num_cols + 1));
-      // *(state->board[state->num_rows]++) = c;
-      // num_cols++;
-    } else {
-      state->num_rows++;
-      state->board = (char **)realloc(state->board, sizeof(char *) * (state->num_rows + 1));
+    if (fp == 0) {
+      fprintf(stdout, "fp is not a file, %p", fp);
+      fflush(stdout);
+      return NULL;
     }
-    c = fgetc(fp);
-  }
-  return NULL;
+    char c = (char )fgetc(fp);
+    game_state_t *state = (game_state_t *)malloc(sizeof(game_state_t));
+    state->num_rows = 0;
+    state->num_snakes = 0;
+    state->snakes = NULL;
+    char **board = state->board;
+
+    board = (char **)calloc(state->num_rows+1, sizeof(char *));
+
+    // char *buf = (char *)malloc(sizeof(char) * 10);
+    unsigned int num_cols = 0;
+    for (; c != EOF; ) {
+        // printf("%c", c);
+        // fflush(stdout);
+        if (c != '\n') {
+            board[state->num_rows] = (char *)realloc(board[state->num_rows], sizeof(char) * (num_cols+1));
+            board[state->num_rows][num_cols] = c;
+            num_cols++;
+        } else {
+            board[state->num_rows] = (char *)realloc(board[state->num_rows], sizeof(char) * (num_cols+1));
+            board[state->num_rows][num_cols] = '\0';
+            state->num_rows++;
+            board = (char **)realloc(board, sizeof(char *) * (state->num_rows + 1));
+            memset(board+state->num_rows, 0, sizeof(char *));
+            num_cols = 0;
+        }
+        c = (char )fgetc(fp);
+    }
+    state->board = board;
+    
+  return state;
 }
 
 /*
