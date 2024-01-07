@@ -96,7 +96,7 @@ void print_board(game_state_t* state, FILE* fp) {
   (already implemented for you).
 */
 void save_board(game_state_t* state, char* filename) {
-  FILE* f = fopen(filename, "w");
+  FILE* f = fopen(filename, "w+");
   print_board(state, f);
   fclose(f);
 }
@@ -334,11 +334,6 @@ void update_state(game_state_t* state, int (*add_food)(game_state_t* state)) {
 /* Task 5 */
 game_state_t* load_board(FILE* fp) {
   // TODO: Implement this function.
-    if (fp == 0) {
-      fprintf(stdout, "fp is not a file, %p", fp);
-      fflush(stdout);
-      return NULL;
-    }
     char c = (char )fgetc(fp);
     game_state_t *state = (game_state_t *)malloc(sizeof(game_state_t));
     state->num_rows = 0;
@@ -382,11 +377,47 @@ game_state_t* load_board(FILE* fp) {
 */
 static void find_head(game_state_t* state, unsigned int snum) {
   // TODO: Implement this function.
+  snake_t *snake = &state->snakes[snum];
+  unsigned int col = snake->tail_col;
+  unsigned int row = snake->tail_row;
+  char **board = state->board;
+  char tail = board[row][col];
+  
+  while (!strchr("WASDx", tail)) {
+    row = get_next_row(row, tail);
+    col = get_next_col(col, tail);
+    tail = board[row][col];
+  }
+  if (tail== 'x')
+    snake->live = false;
+  else
+    snake->live = true;
+  snake->head_col = col;
+  snake->head_row = row;
   return;
 }
 
 /* Task 6.2 */
 game_state_t* initialize_snakes(game_state_t* state) {
   // TODO: Implement this function.
-  return NULL;
+  state->snakes = (snake_t *)calloc(state->num_snakes+1, sizeof(snake_t));
+  for (unsigned int i=0; i<state->num_rows; i++) {
+    for (unsigned int j=0; state->board[i][j]!='\0'; j++ ) {
+      switch(state->board[i][j]) {
+        case 'w':
+        case 'a':
+        case 's':
+        case 'd': {
+          state->snakes[state->num_snakes].tail_col = j;
+          state->snakes[state->num_snakes].tail_row = i;
+          find_head(state, state->num_snakes);
+          state->num_snakes++;
+          state->snakes = (snake_t *)realloc(state->snakes, sizeof(snake_t) * (state->num_snakes + 1));
+        }
+        default: 
+      }
+    }
+  }
+
+  return state;
 }
